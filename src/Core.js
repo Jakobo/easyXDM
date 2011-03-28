@@ -325,7 +325,7 @@ function appendQueryParameters(url, parameters){
             q.push(key + "=" + encodeURIComponent(parameters[key]));
         }
     }
-    return url + (useHash ? "#" : (url.indexOf("?") == -1 ? "?" : "&")) + q.join("&") + hash;
+    return url + (useHash ? "#" : (url.indexOf("?") == -1 ? "?" : "&")) + q.join("&") + (useHash ? "&" + hash.substring(1) : hash);
 }
 
 
