@@ -84,6 +84,17 @@ function isArray(o){
 
 // end
 
+function hasActiveX(name){
+    try {
+        var activeX = new ActiveXObject(name);
+        activeX = null;
+        return true;
+    } 
+    catch (notSupportedException) {
+        return false;
+    }
+}
+
 /*
  * Cross Browser implementation for adding and removing event listeners.
  */
@@ -591,11 +602,11 @@ function prepareTransportStack(config){
                  */
                 protocol = "1";
             }
-            else if (isHostMethod(window, "ActiveXObject") && isHostMethod(window, "execScript")) {
+            else if (isHostMethod(window, "ActiveXObject") && hasActiveX("ShockwaveFlash.ShockwaveFlash")) {
                 /*
-                 * This is supported in IE6 and IE7
+                 * The Flash transport superseedes the NixTransport as the NixTransport has been blocked by MS
                  */
-                protocol = "3";
+                protocol = "6";
             }
             else if (navigator.product === "Gecko" && "frameElement" in window && navigator.userAgent.indexOf('WebKit') == -1) {
                 /*
@@ -719,6 +730,12 @@ function prepareTransportStack(config){
             break;
         case "5":
             stackEls = [new easyXDM.stack.FrameElementTransport(config)];
+            break;
+        case "6":
+            if (!config.swf) {
+                config.swf = "../../tools/easyxdm.swf";
+            }
+            stackEls = [new easyXDM.stack.FlashTransport(config)];
             break;
     }
     // this behavior is responsible for buffering outgoing messages, and for performing lazy initialization
