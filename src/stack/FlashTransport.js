@@ -80,7 +80,7 @@ easyXDM.stack.FlashTransport = function(config){
         document.body.appendChild(swfContainer);
         
         // create the object/embed
-        var flashVars = "proto=" + location.protocol + "&domain=" + getDomainName(location.href) + "&init=" + init;
+        var flashVars = "proto=" + global.location.protocol + "&domain=" + getDomainName(global.location.href) + "&init=" + init;
         swfContainer.innerHTML = "<object height='1' width='1' type='application/x-shockwave-flash' id='" + id + "' data='" + url + "'>" +
         "<param name='allowScriptAccess' value='always'></param>" +
         "<param name='wmode' value='transparent'>" +
