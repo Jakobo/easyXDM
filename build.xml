@@ -4,7 +4,7 @@
 	<property file="build.secret.properties"/>
 	<property name="project.build.artifactdir" value="./artifacts/"/>
 	<property name="project.build.publishdir" value="./artifacts/"/>
-	<property name="project.build.version" value="2.4.12"/>
+	<property name="project.build.version" value="2.4.13"/>
 	
 	<!-- Setup classpath for js-build-tools ant tasks -->
 	<path id="js-build-tasks.classpath">
@@ -55,7 +55,6 @@
 			<fileset dir="." includes="${project.src.dir}/stack/FlashTransport.js" />
 			<fileset dir="." includes="${project.src.dir}/stack/PostMessageTransport.js" />
 			<fileset dir="." includes="${project.src.dir}/stack/FrameElementTransport.js" />
-			<fileset dir="." includes="${project.src.dir}/stack/NixTransport.js" />
 			<fileset dir="." includes="${project.src.dir}/stack/NameTransport.js" />
 			<fileset dir="." includes="${project.src.dir}/stack/HashTransport.js" />
 			<fileset dir="." includes="${project.src.dir}/stack/ReliableBehavior.js" />
@@ -113,7 +112,7 @@
 			<fileset file= "README.txt"/>
 			<fileset file= "${project.src.dir}/changes.txt"/>
 			<fileset file= "tools/json2.js"/>
-			<fileset file= "tools/easyxdm.swf"/>
+			<fileset file= "src/easyxdm.swf"/>
 		</copy>
 
 		<copy todir="${project.src.dir}/tests">
@@ -144,14 +143,13 @@
 	</target>
 	
 	<target name="publish" depends="document, package">
-		<delete dir="${project.build.publishdir}/" quiet="true" />
-		<copy todir="${project.build.publishdir}/">
+		<delete dir="${project.build.publishdir}v${project.build.version}" quiet="true" />
+		<copy todir="${project.build.publishdir}v${project.build.version}">
 			<fileset dir="${project.build.artifactdir}v${project.build.version}"/>
 		</copy>	
-		<copy todir="${project.build.publishdir}/docs/">
+		<copy todir="${project.build.publishdir}v${project.build.version}/docs/">
 			<fileset dir="${project.build.artifactdir}v${project.build.version}-docs"/>
 		</copy>
-		<copy file="${project.build.artifactdir}${ant.project.name}-${project.build.version}.${build.number}.zip" tofile="${project.build.publishdir}/source.zip" />
 	</target>
 	
 	<target name="publishtoweb" depends="package, document">
