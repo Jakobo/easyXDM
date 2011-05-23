@@ -63,7 +63,7 @@ class Main
 		if (Main.INITIALIZED) return; else Main.INITIALIZED = true;
 		
 		// validate the passed arguments
-		if (!Validate(_root.ns) || !Validate(_root.proto) || !Validate(_root.domain) || !Validate(_root.port)) return;
+		if (!Validate(_root.ns) || !Validate(_root.proto) || !Validate(_root.domain) || !Validate(_root.port)) || !Validate(_root.whenloaded) return;
 		
 		// LocalConnection has a max length 
 		var maxMessageLength = 40000;
@@ -86,7 +86,7 @@ class Main
 			
 		log("enabling communication with " + _root.domain);
 		// allow javascript in the page to interact with the SWF
-		security[_root.proto == "http" ? "allowInsecureDomain" : "allowDomain"](_root.domain);
+		security[_root.proto == "http:" ? "allowInsecureDomain" : "allowDomain"](_root.domain);
 		// add the postMessage method
 		ExternalInterface.addCallback("postMessage", { }, function(channel:String, message:String) {
 			sendMap[channel](message);
@@ -184,6 +184,6 @@ class Main
 		
 		// kick things off
 		log("calling init");
-		ExternalInterface.call(prefix + "easyXDM.Fn.get(\"flash_loaded\")");		
+		ExternalInterface.call(prefix + "easyXDM.Fn.get(\"" + _root.whenloaded + "\")");
 	}
 }

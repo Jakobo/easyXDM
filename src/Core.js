@@ -1,5 +1,5 @@
 /*jslint evil: true, browser: true, immed: true, passfail: true, undef: true, newcap: true*/
-/*global easyXDM, JSON, XMLHttpRequest, window, escape, unescape, ActiveXObject */
+/*global JSON, XMLHttpRequest, window, escape, unescape, ActiveXObject */
 //
 // easyXDM
 // http://easyxdm.net/
@@ -38,7 +38,8 @@ var IFRAME_PREFIX = "easyXDM_";
 var HAS_NAME_PROPERTY_BUG;
 var HAS_FUNCTION_RECAST_BUG = false/*@cc_on || ((ScriptEngineMajorVersion()+(ScriptEngineMinorVersion()/10)) <= 5.8)@*/;
 var useHash = false; // whether to use the hash over the query
-
+var flashVersion; // will be set if using flash
+var HAS_FLASH_THROTTLED_BUG;
 // #ifdef debug
 var _trace = emptyFn;
 // #endif
@@ -83,10 +84,11 @@ function isArray(o){
 }
 
 // end
-
-function hasActiveX(name){
+function hasFlash(){
     try {
-        var activeX = new ActiveXObject(name);
+        var activeX = new ActiveXObject("ShockwaveFlash.ShockwaveFlash");
+        flashVersion = Array.prototype.slice.call(activeX.GetVariable("$version").match(/(\d+),(\d+),(\d+),(\d+)/), 1);
+        HAS_FLASH_THROTTLED_BUG = parseInt(flashVersion[0], 10) > 9 && parseInt(flashVersion[1], 10) > 0;
         activeX = null;
         return true;
     } 
@@ -409,7 +411,7 @@ function undef(v){
  * A safe implementation of HTML5 JSON. Feature testing is used to make sure the implementation works.
  * @return {JSON} A valid JSON conforming object, or null if not found.
  */
-function getJSON(){
+var getJSON = function(){
     var cached = {};
     var obj = {
         a: [1, 2, 3]
@@ -444,7 +446,7 @@ function getJSON(){
         return cached;
     }
     return null;
-}
+};
 
 /**
  * Applies properties from the source object to the target object.<br/>
@@ -475,16 +477,11 @@ function apply(destination, source, noOverwrite){
 
 // This tests for the bug in IE where setting the [name] property using javascript causes the value to be redirected into [submitName].
 function testForNamePropertyBug(){
-    var el = document.createElement("iframe");
-    el.name = IFRAME_PREFIX + "TEST";
-    apply(el.style, {
-        position: "absolute",
-        left: "-2000px",
-        top: "0px"
-    });
-    document.body.appendChild(el);
-    HAS_NAME_PROPERTY_BUG = !(el.contentWindow === window.frames[el.name]);
-    document.body.removeChild(el);
+    var form = document.body.appendChild(document.createElement("form")),
+    input = form.appendChild(document.createElement("input"));
+    input.name = IFRAME_PREFIX + "TEST" + channelId; // append channelId in order to avoid caching issues
+    HAS_NAME_PROPERTY_BUG = input !== form.elements[input.name];
+    document.body.removeChild(form);
     // #ifdef debug
     _trace("HAS_NAME_PROPERTY_BUG: " + HAS_NAME_PROPERTY_BUG);
     // #endif
@@ -534,8 +531,17 @@ function createFrame(config){
     
     if (!config.container) {
         // This needs to be hidden like this, simply setting display:none and the like will cause failures in some browsers.
-        frame.style.position = "absolute";
-        frame.style.top = "-2000px";
+        // Also, Flash requires the frame to be actually visible in order to not throttle the LocalConnection
+        apply(frame.style, HAS_FLASH_THROTTLED_BUG ? {
+            position: "fixed",
+            right: 0,
+            top: 0,
+            height: "20px",
+            width: "20px"
+        } : {
+            position: "absolute",
+            top : "-2000px"
+        });
         config.container = document.body;
     }
     
@@ -549,6 +555,7 @@ function createFrame(config){
     apply(frame, config.props);
     
     frame.border = frame.frameBorder = 0;
+    frame.allowTransparency = true;
     config.container.appendChild(frame);
     
     // HACK see above
@@ -630,7 +637,7 @@ function prepareTransportStack(config){
                  */
                 protocol = "1";
             }
-            else if (isHostMethod(window, "ActiveXObject") && hasActiveX("ShockwaveFlash.ShockwaveFlash")) {
+            else if (isHostMethod(window, "ActiveXObject") && hasFlash()) {
                 /*
                  * The Flash transport superseedes the NixTransport as the NixTransport has been blocked by MS
                  */
@@ -669,6 +676,7 @@ function prepareTransportStack(config){
         }
         // #endif
     }
+    config.protocol = protocol; // for conditional branching
     
     switch (protocol) {
         case "0":// 0 = HashTransport
@@ -762,6 +770,9 @@ function prepareTransportStack(config){
         case "6":
             if (!config.swf) {
                 config.swf = "../../tools/easyxdm.swf";
+            }
+            if (!flashVersion){
+                hasFlash();
             }
             stackEls = [new easyXDM.stack.FlashTransport(config)];
             break;
