@@ -43,7 +43,7 @@ easyXDM.stack.FlashTransport = function(config){
     }
     // #endif
     var pub, // the public interface
- frame, send, targetOrigin, swf, init = false, swfContainer;
+ frame, send, targetOrigin, swf, swfContainer;
     
     function onMessage(message, origin){
         setTimeout(function(){
@@ -101,7 +101,7 @@ easyXDM.stack.FlashTransport = function(config){
         document.body.appendChild(swfContainer);
         
         // create the object/embed
-        var flashVars = "whenloaded=flash_loaded" + domain.replace(/-\./g,"_") + "&proto=" + global.location.protocol + "&domain=" + getDomainName(global.location.href) + "&port=" + getPort(global.location.href) + "&ns=" + namespace;
+        var flashVars = "callback=flash_loaded" + domain.replace(/-\./g,"_") + "&proto=" + global.location.protocol + "&domain=" + getDomainName(global.location.href) + "&port=" + getPort(global.location.href) + "&ns=" + namespace;
         // #ifdef debug
         flashVars += "&log=true";
         // #endif
@@ -164,10 +164,11 @@ easyXDM.stack.FlashTransport = function(config){
             // set up the omMessage handler
             easyXDM.Fn.set("flash_" + config.channel + "_onMessage", onMessage);
             
-            var swfdomain = getDomainName(resolveUrl(config.swf));
+            config.swf = resolveUrl(config.swf); // reports have been made of requests gone rogue when using relative paths
+            var swfdomain = getDomainName(config.swf);
             var fn = function(){
                 // set init to true in case the fn was called was invoked from a separate instance
-                init = true;
+                easyXDM.stack.FlashTransport[swfdomain].init = true;
                 swf = easyXDM.stack.FlashTransport[swfdomain].swf;
                 // create the channel
                 swf.createChannel(config.channel, config.secret, getLocation(config.remote), config.isHost);
@@ -187,7 +188,7 @@ easyXDM.stack.FlashTransport = function(config){
                 }
             };
             
-            if (init) {
+            if (easyXDM.stack.FlashTransport[swfdomain] && easyXDM.stack.FlashTransport[swfdomain].init) {
                 // if the swf is in place and we are the consumer
                 fn();
             }
