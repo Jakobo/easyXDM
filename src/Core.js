@@ -310,7 +310,7 @@ function getLocation(url){
         throw new Error("The file:// protocol is not supported");
     }
     // #endif
-    var m = url.match(reURI);
+    var m = url.toLowerCase().match(reURI);
     var proto = m[2], domain = m[3], port = m[4] || "";
     if ((proto == "http:" && port == ":80") || (proto == "https:" && port == ":443")) {
         port = "";
@@ -477,8 +477,7 @@ function apply(destination, source, noOverwrite){
 
 // This tests for the bug in IE where setting the [name] property using javascript causes the value to be redirected into [submitName].
 function testForNamePropertyBug(){
-    var form = document.body.appendChild(document.createElement("form")),
-    input = form.appendChild(document.createElement("input"));
+    var form = document.body.appendChild(document.createElement("form")), input = form.appendChild(document.createElement("input"));
     input.name = IFRAME_PREFIX + "TEST" + channelId; // append channelId in order to avoid caching issues
     HAS_NAME_PROPERTY_BUG = input !== form.elements[input.name];
     document.body.removeChild(form);
@@ -531,16 +530,9 @@ function createFrame(config){
     
     if (!config.container) {
         // This needs to be hidden like this, simply setting display:none and the like will cause failures in some browsers.
-        // Also, Flash requires the frame to be actually visible in order to not throttle the LocalConnection
-        apply(frame.style, HAS_FLASH_THROTTLED_BUG ? {
-            position: "fixed",
-            right: 0,
-            top: 0,
-            height: "20px",
-            width: "20px"
-        } : {
+        apply(frame.style, {
             position: "absolute",
-            top : "-2000px"
+            top: "-2000px"
         });
         config.container = document.body;
     }
@@ -669,15 +661,13 @@ function prepareTransportStack(config){
             // #ifdef debug
             _trace("selecting protocol: " + protocol);
             // #endif
-        }
-        // #ifdef debug
+        } // #ifdef debug
         else {
             _trace("using protocol: " + protocol);
         }
         // #endif
     }
     config.protocol = protocol; // for conditional branching
-    
     switch (protocol) {
         case "0":// 0 = HashTransport
             apply(config, {
@@ -771,7 +761,7 @@ function prepareTransportStack(config){
             if (!config.swf) {
                 config.swf = "../../tools/easyxdm.swf";
             }
-            if (!flashVersion){
+            if (!flashVersion) {
                 hasFlash();
             }
             stackEls = [new easyXDM.stack.FlashTransport(config)];

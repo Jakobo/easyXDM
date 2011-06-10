@@ -33,6 +33,8 @@
  * @cfg {String} remote The remote domain to communicate with.
  * @cfg {String} secret the pre-shared secret used to secure the communication.
  * @cfg {String} swf The path to the swf file
+ * @cfg {Boolean} swfNoThrottle Set this to true if you want to take steps to avoid beeing throttled when hidden.
+ * @cfg {String || DOMElement} swfContainer Set this if you want to control where the swf is placed
  */
 easyXDM.stack.FlashTransport = function(config){
     // #ifdef debug
@@ -63,45 +65,51 @@ easyXDM.stack.FlashTransport = function(config){
         // #endif
         // add the queue to hold the init fn's
         easyXDM.stack.FlashTransport[domain] = {
-          queue:[]
+            queue: []
         };
         // the differentiating query argument is needed in Flash9 to avoid a caching issue where LocalConnection would throw an error.
         var url = config.swf + "?host=" + config.isHost;
         var id = "easyXDM_swf_" + Math.floor(Math.random() * 10000);
         
         // prepare the init function that will fire once the swf is ready
-        easyXDM.Fn.set("flash_loaded" + domain.replace(/-\./g,"_"), function(){
+        easyXDM.Fn.set("flash_loaded" + domain.replace(/-\./g, "_"), function(){
             easyXDM.stack.FlashTransport[domain].swf = swf = swfContainer.firstChild;
             var queue = easyXDM.stack.FlashTransport[domain].queue;
-            for (var i = 0; i < queue.length; i++){
+            for (var i = 0; i < queue.length; i++) {
                 queue[i]();
             }
             queue.length = 0;
         });
         
-        // create the container that will hold the swf
-        swfContainer = document.createElement('div');
-        // http://bugs.adobe.com/jira/browse/FP-4796
-        // http://tech.groups.yahoo.com/group/flexcoders/message/162365
-        // https://groups.google.com/forum/#!topic/easyxdm/mJZJhWagoLc
-        apply(swfContainer.style, HAS_FLASH_THROTTLED_BUG ? {
-            height: "20px",
-            width: "20px",
-            position: "fixed",
-            right: 0,
-            top: 0
-        } : {
-            height: "1",
-            width: "1",
-            position: "absolute",
-            overflow: "hidden",
-            right: 0,
-            top: 0
-        });
-        document.body.appendChild(swfContainer);
+        if (config.swfContainer) {
+            swfContainer = (typeof config.swfContainer == "string") ? document.getElementById(config.swfContainer) : config.swfContainer;
+        }
+        else {
+            // create the container that will hold the swf
+            swfContainer = document.createElement('div');
+            
+            // http://bugs.adobe.com/jira/browse/FP-4796
+            // http://tech.groups.yahoo.com/group/flexcoders/message/162365
+            // https://groups.google.com/forum/#!topic/easyxdm/mJZJhWagoLc
+            apply(swfContainer.style, HAS_FLASH_THROTTLED_BUG && config.swfNoThrottle ? {
+                height: "20px",
+                width: "20px",
+                position: "fixed",
+                right: 0,
+                top: 0
+            } : {
+                height: "1px",
+                width: "1px",
+                position: "absolute",
+                overflow: "hidden",
+                right: 0,
+                top: 0
+            });
+            document.body.appendChild(swfContainer);
+        }
         
         // create the object/embed
-        var flashVars = "callback=flash_loaded" + domain.replace(/-\./g,"_") + "&proto=" + global.location.protocol + "&domain=" + getDomainName(global.location.href) + "&port=" + getPort(global.location.href) + "&ns=" + namespace;
+        var flashVars = "callback=flash_loaded" + domain.replace(/-\./g, "_") + "&proto=" + global.location.protocol + "&domain=" + getDomainName(global.location.href) + "&port=" + getPort(global.location.href) + "&ns=" + namespace;
         // #ifdef debug
         flashVars += "&log=true";
         // #endif
@@ -174,6 +182,16 @@ easyXDM.stack.FlashTransport = function(config){
                 swf.createChannel(config.channel, config.secret, getLocation(config.remote), config.isHost);
                 
                 if (config.isHost) {
+                    // if Flash is going to be throttled and we want to avoid this
+                    if (HAS_FLASH_THROTTLED_BUG && config.swfNoThrottle) {
+                        apply(config.props, {
+                            position: "fixed",
+                            right: 0,
+                            top: 0,
+                            height: "20px",
+                            width: "20px"
+                        });
+                    }
                     // set up the iframe
                     apply(config.props, {
                         src: appendQueryParameters(config.remote, {
@@ -194,7 +212,7 @@ easyXDM.stack.FlashTransport = function(config){
             }
             else {
                 // if the swf does not yet exist
-                if (!easyXDM.stack.FlashTransport[swfdomain]){
+                if (!easyXDM.stack.FlashTransport[swfdomain]) {
                     addSwf(swfdomain);
                 }
                 easyXDM.stack.FlashTransport[swfdomain].queue.push(fn);
