@@ -105,11 +105,11 @@ easyXDM.stack.FlashTransport = function(config){
         }
         
         // create the object/embed
-        var flashVars = "callback=flash_loaded" + encodeURIComponent(domain.replace(/[\-.]/g, "_"))
-            + "&proto=" + global.location.protocol
-            + "&domain=" + encodeURIComponent(getDomainName(global.location.href))
-            + "&port=" + encodeURIComponent(getPort(global.location.href))
-            + "&ns=" + encodeURIComponent(namespace);
+        var flashVars = "callback=flash_loaded" + encodeURIComponent(domain.replace(/[\-.]/g, "_")) +
+            "&proto=" + global.location.protocol +
+            "&domain=" + encodeURIComponent(getDomainName(global.location.href)) +
+            "&port=" + encodeURIComponent(getPort(global.location.href)) +
+            "&ns=" + encodeURIComponent(namespace);
         // #ifdef debug
         flashVars += "&log=true";
         // #endif
