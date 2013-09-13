@@ -24,12 +24,29 @@
 // THE SOFTWARE.
 //
 
+/*
+LinkedIn Changes in This File
+  * We have added a regex reFunction to detect after function.toString() if an
+    object is a function. This is because in RPC, the object containing
+    functions gets mangled by older versions of Internet Explorer. Everything
+    starts showing typeof === 'object'. The only known solution is to toString()
+  * To avoid exposing additional logic to other browsers, we do a conditional
+    comment test that enables the HAS_FUNCTION_RECAST_BUG flag
+  * A new easyXDM function isCallableFunction is created. It does an immediate
+    typeof check (satisfies modern browsers), then falls back to additional
+    checks if the HAS_FUNCTION_RECAST_BUG is set. To avoid regexing unless
+    absolutely necessary, we test for a call/apply pair which increases the
+    likelyhood that this object we're inspecting was actually meant to be a
+    function
+*/
+
 var global = this;
 var channelId = Math.floor(Math.random() * 10000); // randomize the initial id in case of multiple closures loaded 
 var emptyFn = Function.prototype;
 var reURI = /^((http.?:)\/\/([^:\/\s]+)(:\d+)*)/; // returns groups for protocol (2), domain (3) and port (4) 
 var reParent = /[\-\w]+\/\.\.\//; // matches a foo/../ expression 
 var reDoubleSlash = /([^:])\/\//g; // matches // anywhere but in the protocol
+var reFunction = /^function/; // matches the opening of a function declaration
 var namespace = ""; // stores namespace under which easyXDM object is stored on the page (empty if object is global)
 var easyXDM = {};
 var _easyXDM = window.easyXDM; // map over global easyXDM in case of overwrite
@@ -38,9 +55,30 @@ var HAS_NAME_PROPERTY_BUG;
 var useHash = false; // whether to use the hash over the query
 var flashVersion; // will be set if using flash
 var HAS_FLASH_THROTTLED_BUG;
+var HAS_FUNCTION_RECAST_BUG = false/*@cc_on || ((ScriptEngineMajorVersion()+(ScriptEngineMinorVersion()/10)) <= 5.8)@*/;
 // #ifdef debug
 var _trace = emptyFn;
 // #endif
+
+// http://www.kilometer0.com/blog/code/internet-explorer-ie-cross-window-javascript-object-typeof-bug/
+function isCallableFunction(fn) {
+    if (typeof fn === "function") {
+        return true;
+    }
+
+    // IE specific (object, and looking at an object)
+    if (HAS_FUNCTION_RECAST_BUG && typeof fn === "object" && typeof fn.call !== "undefined" && typeof fn.apply !== "undefined") {
+        try {
+            return reFunction.test(fn.toString());
+        }
+        catch(e) {
+            return false; // either toString() can't be called, or other assorted errors
+        }
+    }
+    
+    return false;
+}
+// end
 
 
 // http://peter.michaux.ca/articles/feature-detection-state-of-the-art-browser-scripting

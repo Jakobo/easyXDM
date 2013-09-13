@@ -1,5 +1,5 @@
 /*jslint evil: true, browser: true, immed: true, passfail: true, undef: true, newcap: true*/
-/*global easyXDM, window, escape, unescape, undef, getJSON, debug, emptyFn, isArray */
+/*global easyXDM, window, escape, unescape, undef, getJSON, debug, emptyFn, isArray, isCallableFunction */
 //
 // easyXDM
 // http://easyxdm.net/
@@ -23,6 +23,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+
+/*
+LinkedIn Changes in This File
+  * We make use of the function isCallableFunction (Core.js) to test if our
+    arguments may actually be functions (IE 7/8 specific). This was changed
+    to an || statement to be less destructive during merges.
+*/
 
 /**
  * @class easyXDM.stack.RpcBehavior
@@ -74,9 +81,9 @@ easyXDM.stack.RpcBehavior = function(proxy, config){
                 method: method
             };
             
-            if (l > 0 && typeof arguments[l - 1] === "function") {
+            if (l > 0 && (typeof arguments[l - 1] === "function" || isCallableFunction(arguments[l - 1]))) {
                 //with callback, procedure
-                if (l > 1 && typeof arguments[l - 2] === "function") {
+                if (l > 1 && (typeof arguments[l - 2] === "function" || isCallableFunction(arguments[l - 2]))) {
                     // two callbacks, success and error
                     callback = {
                         success: arguments[l - 2],
